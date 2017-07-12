@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">FileManager</string>
+    <string name="create_file">创建文件</string>
+    <string name="create_folder">创建文件夹</string>
+    <string name="creat_hint">请输入文件名</string>
+    <string name="radio_currentpath">在当前目录检索</string>
+    <string name="radio_wholepath">在整个目录中检索</string>
+    <string name="edit_search_hint">请输入要检索的文件名</string>
+    <string name="ButtonRefer">保存</string>
+    <string name="button_back">取消</string>
+</resources>

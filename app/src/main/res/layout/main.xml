@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.dmrf.filemanager.MainActivity">
+
+    <!--显示当前路径-->
+    <TextView
+        android:id="@+id/mPath"
+        android:layout_width="368dp"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:textSize="20sp"
+        tools:layout_editor_absoluteX="8dp"
+        tools:layout_editor_absoluteY="0dp" />
+
+    <!--创建显示当前目录的内容-->
+    <ListView
+        android:id="@+id/android:list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/mPath"
+        android:layout_marginBottom="70px"
+        android:layout_marginTop="8dp"
+        android:cacheColorHint="#00000000"
+        android:divider="@color/colorAccent"
+        app:layout_constraintTop_toTopOf="@+id/mPath"
+        tools:layout_editor_absoluteX="0dp"></ListView>
+
+    <!--创建底部菜单栏-->
+    <GridView
+        android:id="@+id/file_gridview_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@+id/android:list"></GridView>
+</RelativeLayout>

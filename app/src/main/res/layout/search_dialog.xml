@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!--提供二选一选项-->
+    <RadioGroup
+        android:id="@+id/radiogroup_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <!--在当前目录下检索-->
+        <RadioButton
+            android:id="@+id/search_currentpath"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_currentpath" />
+        <!--在整个目录中检索-->
+        <RadioButton
+            android:id="@+id/search_wholepath"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_wholepath" />
+    </RadioGroup>
+    <!--输入要检索的文件或文件夹的名字-->
+    <EditText
+        android:id="@+id/edit_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/edit_search_hint"
+        android:maxLines="1" />
+</LinearLayout>
