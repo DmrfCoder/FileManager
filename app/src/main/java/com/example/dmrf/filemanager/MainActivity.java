@@ -1,9 +1,11 @@
 package com.example.dmrf.filemanager;
 
 import android.app.ListActivity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Environment;
 import android.support.annotation.IdRes;
 import android.support.constraint.solver.LinearSystem;
@@ -87,6 +89,110 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
         initFileListInfo(mRootPath);
     }
 
+    /**
+     * 注册广播
+     **/
+
+
+    private IntentFilter mFilter;
+    private FileBroadCast mFileBroadCast;
+    private IntentFilter mIntentFilter;
+    private SearchBroadCast mServiceBroadCast;
+
+    protected void onStart() {
+        super.onStart();
+        mFilter = new IntentFilter();
+        mFilter.addAction(FileService.FILE_NOTIFICATION);
+        mFilter.addAction(FileService.FILE_SEARCH_COMPLETED);
+        mIntentFilter = new IntentFilter();
+        mIntentFilter.addAction(KEYWOED_BROADCAST);
+        if (mFileBroadCast == null) {
+            mFileBroadCast = new FileBroadCast();
+        }
+
+        if (mServiceBroadCast == null) {
+            mServiceBroadCast = new SearchBroadCast();
+        }
+
+        //动态注册广播
+        this.registerReceiver(mFileBroadCast, mFilter);
+        this.registerReceiver(mServiceBroadCast, mIntentFilter);
+    }
+
+    /**
+     * 注销广播
+     **/
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mFileName.clear();
+        mFilePath.clear();
+        this.unregisterReceiver(mFileBroadCast);
+        this.unregisterReceiver(mServiceBroadCast);
+    }
+
+    public static boolean isComeBackFromNotification = false;
+    String mAction;
+
+    /**
+     * 内部广播类
+     **/
+
+    class FileBroadCast extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mAction = intent.getAction();
+            //搜索完毕的广播
+            if (FileService.FILE_SEARCH_COMPLETED.equals(mAction)) {
+                mFileName = intent.getStringArrayListExtra("mFileNameList");
+                mFilePath = intent.getStringArrayListExtra("mFilePathsList");
+                Toast.makeText(MainActivity.this, "搜索完毕！", Toast.LENGTH_SHORT).show();
+                //这里搜索完毕后应弹出一个对话框提示用户要不要显示搜索结果
+                searchCompletedDialog("搜索完毕，是否马上显示结果？");
+                //当搜索完成后停止服务，然后在服务中取消通知
+                getApplicationContext().stopService(serviceIntent);
+            } else if (FileService.FILE_NOTIFICATION.equals(mAction)) {
+                //单击通知栏发送过来的广播
+                //单击通知回到当前Activity，读取其中信息
+                String mNotification = intent.getStringExtra("notification");
+                Toast.makeText(MainActivity.this, mNotification, Toast.LENGTH_LONG).show();
+                searchCompletedDialog("你确定要取消搜索吗？");
+            }
+        }
+    }
+
+    //搜索完毕后单击通知过来时的提示框
+    private void searchCompletedDialog(String s) {
+        AlertDialog.Builder searchDialog = new AlertDialog.Builder(MainActivity.this).setTitle("提示").setMessage(s)
+                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        /**
+                         * 当弹出框时，要对这个“确定”按钮进行一个判断，因为要对不同的情况作不同的处理（2种情况）：
+                         * 1：搜索完毕
+                         * 2：取消搜索
+                         */
+                        if (FileService.FILE_SEARCH_COMPLETED.equals(mAction)) {
+                            if (mFileName.size() == 0) {
+                                Toast.makeText(MainActivity.this, "无相关文件/文件夹！", Toast.LENGTH_SHORT).show();
+                                setListAdapter(new FileAdapter(MainActivity.this, mFileName, mFilePath));//清空列表
+                            } else {
+                                //显示文件列表
+                                setListAdapter(new FileAdapter(MainActivity.this, mFileName, mFilePath));
+                            }
+                        } else {
+                            //设置搜索标识为true
+                            isComeBackFromNotification = true;
+                            //关闭服务，取消搜索
+                            getApplicationContext().stopService(serviceIntent);
+                        }
+                    }
+                }).setNegativeButton("取消", null);
+        searchDialog.create();
+        searchDialog.show();
+    }
 
     //菜单项的监听
     private void initMenuListener() {
@@ -133,7 +239,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
     }
 
     //用静态变量存储当前目录路径信息
-    private static String mCurrentFilePath = "";
+    public static String mCurrentFilePath = "";
 
     /**
      * 根据给定的一个文件夹路径字符串遍历出这个文件夹中包含的文件名称并配置到ListView列表中
@@ -303,8 +409,8 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
 
     RadioGroup mRadioGroup;
     Intent serviceIntent;
-    private static String KEYWOED_BROADCAST = "com.example.dmrf.filemanager.BRODCAST";
-    boolean isComeBackFromNotification = false;
+    public static String KEYWOED_BROADCAST = "com.example.dmrf.filemanager.BRODCAST";
+
 
     //显示搜索对话框
     private void searchDialog() {
