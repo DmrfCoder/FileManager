@@ -3,6 +3,7 @@ package com.example.dmrf.filemanager;
 import android.app.ListActivity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Environment;
 import android.support.annotation.IdRes;
 import android.support.constraint.solver.LinearSystem;
@@ -301,6 +302,9 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
     }
 
     RadioGroup mRadioGroup;
+    Intent serviceIntent;
+    private static String KEYWOED_BROADCAST = "com.example.dmrf.filemanager.BRODCAST";
+    boolean isComeBackFromNotification = false;
 
     //显示搜索对话框
     private void searchDialog() {
@@ -342,10 +346,27 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
                     } else {
                         mPath.setText(mSDCard);
                     }
+                    //获取用户输入的关键字并发送广播--开始
+                    Intent keyWordsIntent = new Intent();
+                    keyWordsIntent.setAction(KEYWOED_BROADCAST);
+                    //传递搜索的范围区间，1在当前路径下搜索，2在SD卡根目录下搜索
+                    if (mChecked == 1) {
+                        keyWordsIntent.putExtra("searchpath", mCurrentFilePath);
+                    } else {
+                        keyWordsIntent.putExtra("searchpath", mSDCard);
+                    }
+                    //传递关键字
+                    keyWordsIntent.putExtra("keywords", keyWords);
+                    //到这里为止是携带关键字信息并发送广播，会在Service服务中接收该广播并根据关键字进行搜索
+                    //获取用户输入的关键字并发送广播-结束
+                    getApplicationContext().sendBroadcast(keyWordsIntent);
+                    serviceIntent = new Intent("com.android.service.FILE_SEARCH_START");
+                    MainActivity.this.startService(serviceIntent);//开启搜索服务
+
                 }
             }
-        });
-
+        }).setNegativeButton("取消", null);
+        mBuilder.create().show();
     }
 
     //为GridView配置菜单资源
