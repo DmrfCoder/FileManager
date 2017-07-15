@@ -20,7 +20,7 @@
         android:lines="8" />
     <!--保存按钮-->
     <Button
-        android:id="@+id/ButtonRefer"
+        android:id="@+id/ButtonSave"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
@@ -32,7 +32,7 @@
 
     <!--取消按钮-->
     <Button
-        android:id="@+id/ButtonBack"
+        android:id="@+id/ButtonCancle"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"

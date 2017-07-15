@@ -1,11 +1,13 @@
 package com.example.dmrf.filemanager;
 
 import android.app.ListActivity;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Environment;
 import android.support.annotation.IdRes;
 import android.support.constraint.solver.LinearSystem;
@@ -22,6 +24,7 @@ import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SimpleAdapter;
@@ -83,6 +86,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
 
         //为列表绑定长按监听器
         getListView().setOnItemLongClickListener(this);
+
 
         mPath = (TextView) findViewById(R.id.mPath);
         //程序一开始的时候加载手机目录下的文件列表
@@ -658,5 +662,156 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
         };
         //显示重命名对话框
         new AlertDialog.Builder(MainActivity.this).setView(mLL).setPositiveButton("确定", listener).setNegativeButton("取消", null).show();
+    }
+
+    /**
+     * 列表项单击时的事件监听
+     **/
+    @Override
+    protected void onListItemClick(ListView listview, View view, int position, long id) {
+        final File mFile = new File(mFilePath.get(position));
+        //如果文件是可读的，我们就进去查看文件
+        if (mFile.canRead()) {
+            if (mFile.isDirectory()) {
+                //如果是文件夹，则直接进入该文件夹，查看文件目录
+                initFileListInfo(mFilePath.get(position));
+            } else {
+                //如果是文件，则用相应的方式打开文件
+                String FileName = mFile.getName();
+                String FileEnds = FileName.substring(FileName.lastIndexOf(".") + 1, FileName.length()).toLowerCase();
+                if (FileEnds.equals("txt")) {
+                    //显示进度条，表示正在读取
+                    initProgressDialog(ProgressDialog.STYLE_HORIZONTAL);
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            //打开文本文件
+                            try {
+                                openTxtFile(mFile.getPath());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).start();
+
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            while (true) {
+                                if (isTxtDataOk == true) {
+                                    //关闭进度条
+                                    mProgressDialog.dismiss();
+                                    executeIntent(txtData.toString(), mFile.getPath());
+                                    break;
+                                }
+
+                                if (isCancleProgressDialog == true) {
+                                    //关闭进度条
+                                    mProgressDialog.dismiss();
+                                    break;
+                                }
+                            }
+                        }
+                    }).start();
+                } else if (FileEnds.equals("html") || FileEnds.equals("htm") || FileEnds.equals("mht")) {
+                    //如果是html文件，则用自己写的工具打开
+                    Intent intent = new Intent(MainActivity.this, WebActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.putExtra("filepath", mFile.getPath());
+                    startActivity(intent);
+                } else {
+                    openFile(mFile);
+                }
+
+            }
+        } else {
+            //如果文件不可读，我们给出提示不能访问，防止用户操作系统文件造成系统崩溃等
+            Toast.makeText(MainActivity.this, "对不起，您的访问权限不足！", Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+    //调用系统的方法打开文件的方法
+    private void openFile(File mFile) {
+        if (mFile.isDirectory()) {
+            initFileListInfo(mFile.getPath());
+        } else {
+            Intent intent = new Intent();
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setAction(Intent.ACTION_VIEW);
+            //设置当前的文件类型
+            intent.setDataAndType(Uri.fromFile(mFile), getMIMEType(mFile));
+            startActivity(intent);
+        }
+    }
+
+    //获得MIME类型的方法
+    private String getMIMEType(File file) {
+        String type = "";
+        String fileName = file.getName();
+        //取出文件后缀名并转化为小写
+        String fileEnds = fileName.substring(fileName.lastIndexOf(".") + 1, fileName.length()).toLowerCase();
+        if (fileEnds.equals("m4a") || fileEnds.equals("mp3") || fileEnds.equals("mid") || fileEnds.equals("xmf") || fileEnds.equals("ogg") || fileEnds.equals("wav")) {
+            type = "audio/*";// 系统将列出所有可能打开音频文件的程序选择器
+        } else if (fileEnds.equals("3gp") || fileEnds.equals("mp4")) {
+            type = "video/*";// 系统将列出所有可能打开视频文件的程序选择器
+        } else if (fileEnds.equals("jpg") || fileEnds.equals("gif") || fileEnds.equals("png") || fileEnds.equals("jpeg") || fileEnds.equals("bmp")) {
+            type = "image/*";// 系统将列出所有可能打开图片文件的程序选择器
+        } else {
+            type = "*/*"; // 系统将列出所有可能打开该文件的程序选择器
+        }
+        return type;
+    }
+
+    //执行intent跳转的方法
+    private void executeIntent(String s, String path) {
+        Intent intent = new Intent(MainActivity.this, EditTxtActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        //传递文件的标题，路径和内容
+        intent.putExtra("path", path);
+        intent.putExtra("title", new File(path).getName());
+        intent.putExtra("data", s);
+        //跳转到EditTxtActivity
+        startActivity(intent);
+    }
+
+
+    //进度条
+    private boolean isCancleProgressDialog = false;
+    ProgressDialog mProgressDialog;
+
+    //弹出正在解析文本数据的ProgressDialog
+    private void initProgressDialog(int styleHorizontal) {
+        isCancleProgressDialog = false;
+        mProgressDialog = new ProgressDialog(this);
+        mProgressDialog.setTitle("提示");
+        mProgressDialog.setMessage("正在为你解析文本数据，请稍后...");
+        mProgressDialog.setCancelable(true);
+        mProgressDialog.setButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                isCancleProgressDialog = true;
+                mProgressDialog.dismiss();
+            }
+        });
+        mProgressDialog.show();
+    }
+
+    private boolean isTxtDataOk = false;
+    String txtData;
+
+    //打开文本文件的方法
+    private void openTxtFile(String path) throws IOException {
+        isTxtDataOk = false;
+        FileInputStream fis = new FileInputStream(new File(path));
+        StringBuilder mSB = new StringBuilder();
+        int m;
+        //读取文本文件的内容
+        while ((m = fis.read()) != -1) {
+            mSB.append((char) m);
+        }
+        fis.close();
+        //读取完毕
+        isTxtDataOk = true;
     }
 }
