@@ -19,7 +19,7 @@ import java.io.UnsupportedEncodingException;
  * Created by DMRF on 2017/7/15.
  */
 
-class EditTxtActivity extends Activity implements View.OnClickListener {
+public class EditTxtActivity extends Activity implements View.OnClickListener {
 
     //显示打开文本的内容
     private EditText txtEditText;

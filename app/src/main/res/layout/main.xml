@@ -22,6 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/mPath"
+        android:layout_above="@+id/file_gridview_toolbar"
         android:layout_marginBottom="70px"
         android:layout_marginTop="8dp"
         android:cacheColorHint="#00000000"
@@ -34,6 +35,5 @@
         android:id="@+id/file_gridview_toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_below="@+id/android:list"></GridView>
+        android:layout_alignParentBottom="true"></GridView>
 </RelativeLayout>

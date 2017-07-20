@@ -125,7 +125,7 @@ class FileAdapter extends BaseAdapter {
         } else if (mFileNameList.get(i).toString().equals("BackToUp")) {
             //添加返回上一层按钮
             mViewHolder.mIV.setImageBitmap(mBackUp);
-            mViewHolder.mTV.setText("返回根目录");
+            mViewHolder.mTV.setText("返回上一级");
         } else if (mFileNameList.get(i).toString().equals("BacktoSearchBefore")) {
             //添加返回搜索之前目录的按钮
             mViewHolder.mIV.setImageBitmap(mBackRoot);

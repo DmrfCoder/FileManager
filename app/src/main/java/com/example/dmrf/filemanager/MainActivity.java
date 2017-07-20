@@ -17,6 +17,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Layout;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -167,7 +169,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
         }
     }
 
-    //搜索完毕后单击通知过来时的提示框
+    //搜索完毕后单击通知栏时的提示框
     private void searchCompletedDialog(String s) {
         AlertDialog.Builder searchDialog = new AlertDialog.Builder(MainActivity.this).setTitle("提示").setMessage(s)
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
@@ -179,6 +181,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
                          * 2：取消搜索
                          */
                         if (FileService.FILE_SEARCH_COMPLETED.equals(mAction)) {
+                            findViewById(R.layout.search_layout).setVisibility(View.GONE);
                             if (mFileName.size() == 0) {
                                 Toast.makeText(MainActivity.this, "无相关文件/文件夹！", Toast.LENGTH_SHORT).show();
                                 setListAdapter(new FileAdapter(MainActivity.this, mFileName, mFilePath));//清空列表
@@ -443,7 +446,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
             }
         });
 
-        AlertDialog.Builder mBuilder = new AlertDialog.Builder(MainActivity.this).setTitle("搜索").setPositiveButton("确定", new DialogInterface.OnClickListener() {
+        AlertDialog.Builder mBuilder = new AlertDialog.Builder(MainActivity.this).setView(mLL).setTitle("搜索").setPositiveButton("确定", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 keyWords = ((EditText) mLL.findViewById(R.id.edit_search)).getText().toString();
@@ -471,8 +474,15 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
                     //获取用户输入的关键字并发送广播-结束
                     getApplicationContext().sendBroadcast(keyWordsIntent);
                     serviceIntent = new Intent("com.android.service.FILE_SEARCH_START");
+                    serviceIntent.setPackage("com.example.dmrf.filemanager");
                     MainActivity.this.startService(serviceIntent);//开启搜索服务
-
+                    new AlertDialog.Builder(MainActivity.this).setView(R.layout.search_layout).setTitle("正在搜索中...").setPositiveButton("取消搜索", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            Toast.makeText(MainActivity.this, "已取消搜索", Toast.LENGTH_SHORT).show();
+                            MainActivity.this.stopService(serviceIntent);
+                        }
+                    }).setNegativeButton("隐藏进度条", null).create().show();
                 }
             }
         }).setNegativeButton("取消", null);
@@ -492,7 +502,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
         mGridViewToolBar.setNumColumns(6);
 
         //设置居中对齐
-        mGridViewToolBar.setGravity(GridView.TEXT_ALIGNMENT_CENTER);
+        mGridViewToolBar.setGravity(Gravity.CENTER);
 
         //设置水平、垂直间距为10
         mGridViewToolBar.setVerticalSpacing(10);
@@ -602,7 +612,22 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
 
     //删除文件夹的方法
     private void deleteFolder(File folder) {
-        File[] fileArray = folder.listFiles();
+        if (folder.exists()) {
+            if (folder.isFile()) {
+                folder.delete();
+            } else if (folder.isDirectory()) {
+                File[] files = folder.listFiles();
+                if (files != null) {
+                    for (File f : files) {
+                        deleteFolder(f);
+                    }
+                }
+                folder.delete();
+            } else {
+                Toast.makeText(MainActivity.this, "权限不足", Toast.LENGTH_SHORT).show();
+            }
+        }
+      /*  File[] fileArray = folder.listFiles();
         if (fileArray.length == 0) {
             //如果是空文件夹则直接删除
             folder.delete();
@@ -617,8 +642,9 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
                     deleteFolder(currentFile);
                 }
             }
+            folder.delete();
         }
-        folder.delete();
+*/
     }
 
 
@@ -629,7 +655,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
         LayoutInflater mLI = LayoutInflater.from(MainActivity.this);
         //初始化重命名对话框
         LinearLayout mLL = (LinearLayout) mLI.inflate(R.layout.rename_dialog, null);
-        mET = findViewById(R.id.new_filename);
+        mET = mLL.findViewById(R.id.new_filename);
         //显示当前文件名
         mET.setText(file.getName());
         //设置监听器
@@ -640,7 +666,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
                 final String modifyFilePath = file.getParentFile().getPath() + File.separator;
                 final String newFilePath = modifyFilePath + modifyName;
                 //判断新的文件名是否已经在当前目录下存在
-                if ((new File(newFilePath)).exists()) {
+                if (new File(newFilePath).exists()) {
                     if (!modifyName.equals(file.getName())) {//把重命名操作时没做任何修改的情况过滤掉
                         //弹出该新命名后的文件已经存在的提示，并提示接下来的操作
                         new AlertDialog.Builder(MainActivity.this).setTitle("提示！").setMessage("该文件名已存在，是否覆盖？").setPositiveButton("确定", new DialogInterface.OnClickListener() {
@@ -661,7 +687,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
             }
         };
         //显示重命名对话框
-        new AlertDialog.Builder(MainActivity.this).setView(mLL).setPositiveButton("确定", listener).setNegativeButton("取消", null).show();
+        new AlertDialog.Builder(MainActivity.this).setView(mLL).setPositiveButton("确定", listener).setNegativeButton("取消", null).create().show();
     }
 
     /**
@@ -726,7 +752,7 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
             }
         } else {
             //如果文件不可读，我们给出提示不能访问，防止用户操作系统文件造成系统崩溃等
-            Toast.makeText(MainActivity.this, "对不起，您的访问权限不足！", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "该文件为空或您的访问权限不足！", Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -813,5 +839,18 @@ public class MainActivity extends ListActivity implements AdapterView.OnItemLong
         fis.close();
         //读取完毕
         isTxtDataOk = true;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (!mCurrentFilePath.equals(mRootPath) && !mCurrentFilePath.equals(mSDCard)) {
+                File file = new File(mCurrentFilePath);
+                String path = file.getParent();
+                initFileListInfo(path);
+                return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }

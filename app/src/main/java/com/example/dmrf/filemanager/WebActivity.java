@@ -17,13 +17,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import static java.net.Proxy.Type.HTTP;
 
 /**
  * Created by DMRF on 2017/7/14.
  */
 
-class WebActivity extends Activity {
+public class WebActivity extends Activity {
     //网页浏览器
     private WebView webView;
     //进度条布局和网页内容主体布局
